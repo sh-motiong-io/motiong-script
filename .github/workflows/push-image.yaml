@@ -1,0 +1,31 @@
+name: push-image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+      - name: Generate New Version
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Build & Push Docker Image to ACR
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: 'motiongregistry.azurecr.io/motiong-script:${{ steps.vars.outputs.sha_short }}'
+      - name: Show New Version Summary
+        run: |
+          SUMMARY=$'# Show Version Summary\n${{ steps.vars.outputs.sha_short }}'
+          echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
