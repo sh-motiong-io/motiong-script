@@ -12,6 +12,5 @@ def hello_world(count, name):
     click.echo("Hello world!")
 
 
-# as a standalone CLI application
 if __name__ == "__main__":
     hello_world()
