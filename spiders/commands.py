@@ -23,9 +23,6 @@ def spider(url):
     try:
         driver.get(url)
 
-        print("Page URL:", driver.current_url)
-        print("Page Title:", driver.title)
-
         # click on 2015 for movie list of films
         driver.find_element(By.ID, '2015').click()
         film_titles = WebDriverWait(driver, 5).until(
