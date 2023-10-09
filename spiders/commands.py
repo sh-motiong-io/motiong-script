@@ -13,7 +13,6 @@ def spider(url):
     # us to configure Headless Chrome
     options = Options()
 
-    # this parameter tells Chrome that
     # it should be run without UI (Headless)
     options.add_argument('--headless=new')
 
