@@ -22,16 +22,22 @@ def spider(url):
     try:
         driver.get(url)
 
-        # click on 2015 for movie list of films
-        driver.find_element(By.ID, '2015').click()
-        film_titles = WebDriverWait(driver, 5).until(
-            EC.presence_of_all_elements_located((By.CLASS_NAME, 'film-title')))
+        print("Page URL:", driver.current_url)
+        print("Page Title:", driver.title)
+        
+       # the method below is incorrect after testing
+        # the pageheight is incorrect
+        # todo: find a better way to get the page height
+        pageWidth = driver.execute_script("return document.body.scrollWidth")
+        pageHeight = driver.execute_script("return document.body.scrollHeight")
+        driver.set_window_size(pageWidth, pageHeight)
 
-        for film_title in film_titles:
-            print(film_title.text)
+        driver.get_screenshot_as_file("capture.png")
 
     except Exception as e:
         print("Exception occurred " + repr(e))
 
     finally:
         driver.close()
+
+spider()
