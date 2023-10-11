@@ -25,10 +25,11 @@ def printscreen(url, filename):
         pageWidth = driver.execute_script("return document.body.parentNode.scrollWidth")
         pageHeight = driver.execute_script("return document.body.parentNode.scrollHeight")
         driver.set_window_size(pageWidth, pageHeight + 140)
-
+        print("Window size:", driver.get_window_size())
         # save the screenshot
         # todo: save to a specific folder
         driver.save_screenshot(filename)
+        print("Screenshot saved")
 
     except Exception as e:
         print("Exception occurred " + repr(e))
@@ -36,7 +37,10 @@ def printscreen(url, filename):
 def get_all_links(url, paths = None):
     if paths is None:
         paths = set([url])
-    
+    elif len(paths) > 100:
+        # accounts for more than 300 pages, stop crawling
+        return paths
+
     # get all links by tag name
     driver.get(url)
     links = driver.find_elements(By.TAG_NAME, 'a')
@@ -74,5 +78,3 @@ def save_website_screenshots(url):
         filename = folder_path + "/" + path + ".png"
 
         printscreen(link, filename)
-    
-    driver.close()
