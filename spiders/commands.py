@@ -24,10 +24,18 @@ def printscreen(url, filename):
         # set the window size
         pageWidth = driver.execute_script("return document.body.parentNode.scrollWidth")
         pageHeight = driver.execute_script("return document.body.parentNode.scrollHeight")
+
+        # sometimes the page width is too big
+        # so we need to limit the width
+        if (pageWidth > 1920):
+            pageWidth =  1920
+            driver.set_window_size(pageWidth, pageHeight)
+            pageHeight = driver.execute_script("return document.body.parentNode.scrollHeight")
+
         driver.set_window_size(pageWidth, pageHeight + 140)
+
         print("Window size:", driver.get_window_size())
         # save the screenshot
-        # todo: save to a specific folder
         driver.save_screenshot(filename)
         print("Screenshot saved")
 
@@ -37,8 +45,8 @@ def printscreen(url, filename):
 def get_all_links(url, paths = None):
     if paths is None:
         paths = set([url])
-    elif len(paths) > 100:
-        # accounts for more than 300 pages, stop crawling
+    elif len(paths) > 300:
+        # quantity exceeds 300, stop crawling
         return paths
 
     # get all links by tag name
