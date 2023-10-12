@@ -10,7 +10,7 @@ def entry_point():
     pass
 
 
-entry_point.add_command(spiders.spider)
+entry_point.add_command(spiders.save_website_screenshots, 'save-website-screenshots')
 entry_point.add_command(group2.foo)
 entry_point.add_command(hello_world)
 
