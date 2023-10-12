@@ -1,5 +1,5 @@
 import os
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, quote
 import uuid
 import click
 from selenium import webdriver
@@ -43,16 +43,17 @@ def printscreen(url, filename):
         print("Exception occurred " + repr(e))
 
 def get_all_links(url, paths = None):
+    print("Crawling URL:", url)
     if paths is None:
         paths = set([url])
-    elif len(paths) > 300:
-        # quantity exceeds 300, stop crawling
-        return paths
+        yield url
 
     # get all links by tag name
     driver.get(url)
     links = driver.find_elements(By.TAG_NAME, 'a')
     hrefs = list(map(lambda link: link.get_attribute('href'), links))
+    # cache the links to crawl next
+    nextLevelLinks = []
 
     for href in hrefs:
         # transform relative url to absolute url
@@ -61,15 +62,20 @@ def get_all_links(url, paths = None):
         # check if the url is in the same domain
         # check if the url is not already in the list
         if absolute_url.startswith(url) and absolute_url not in paths:
+            if len(paths) > 100:
+                break
             paths.add(absolute_url)
-            get_all_links(absolute_url, paths)
-    return paths
+            nextLevelLinks.append(absolute_url)
+            yield absolute_url
+    
+    for link in nextLevelLinks:
+        if len(paths) > 100:
+            break
+        yield from get_all_links(link, paths)
 
 @click.command()
 @click.option('--url', default="https://www.motiong.com/", help='Enter the URL you want.')
 def save_website_screenshots(url):
-    links = get_all_links(url)
-
     # create a folder for the domain
     parsed_uri = urlparse(url)
     domain = '{uri.netloc}'.format(uri=parsed_uri)
@@ -79,10 +85,11 @@ def save_website_screenshots(url):
 
     folder_path = os.path.join(os.getcwd(), domain)
     
-    for link in links:
+    for link in get_all_links(url):
+        print("get link", link)
         # create filename from path
         parsed_uri = urlparse(link)
         path = '{uri.path}'.format(uri=parsed_uri)
-        filename = folder_path + "/" + path + ".png"
+        filename = folder_path + "/" + quote(path, safe='') + ".png"
 
         printscreen(link, filename)
