@@ -1,4 +1,6 @@
 import os
+import requests
+from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, quote
 import uuid
 import click
@@ -42,7 +44,25 @@ def printscreen(url, filename):
     except Exception as e:
         print("Exception occurred " + repr(e))
 
-def get_all_links(url, paths = None):
+def save_all_images(url, filename):
+    # sendRequest
+    response = requests.get(url)
+    # Analyze HTML
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Get all picture tags
+    img_tags = soup.find_all("img")
+
+    # Extract picture link
+    img_urls = [urljoin(url, img["src"]) for img in img_tags]
+
+    print("Found {} images".format(len(img_urls)))
+
+    # Write the picture link to the file
+    with open(filename, "a") as f:
+        f.write("\n".join(img_urls) + "\n")
+
+def get_all_links(url, paths = None, limit = 100):
     print("Crawling URL:", url)
     if paths is None:
         paths = set([url])
@@ -55,26 +75,29 @@ def get_all_links(url, paths = None):
     # cache the links to crawl next
     nextLevelLinks = []
 
+    parsed_uri = urlparse(url)
+    domain = '{uri.netloc}'.format(uri=parsed_uri)
+
     for href in hrefs:
         # transform relative url to absolute url
         absolute_url = urljoin(url, href)
 
-        # check if the url is in the same domain
+        # check if the absolute_url is in the same domain
         # check if the url is not already in the list
-        if absolute_url.startswith(url) and absolute_url not in paths:
-            if len(paths) > 100:
+        if domain in absolute_url and absolute_url not in paths:
+            if len(paths) > limit:
                 break
             paths.add(absolute_url)
             nextLevelLinks.append(absolute_url)
             yield absolute_url
     
     for link in nextLevelLinks:
-        if len(paths) > 100:
+        if len(paths) > limit:
             break
-        yield from get_all_links(link, paths)
+        yield from get_all_links(link, paths, limit)
 
 @click.command()
-@click.option('--url', default="https://www.motiong.com/", help='Enter the URL you want.')
+@click.option('--url', default="https://www.gov.cn/zhengce/pdfFile/downloadFile.htm", help='Enter the URL you want.')
 def save_website_screenshots(url):
     # create a folder for the domain
     parsed_uri = urlparse(url)
@@ -86,10 +109,17 @@ def save_website_screenshots(url):
     folder_path = os.path.join(os.getcwd(), domain)
     
     for link in get_all_links(url):
-        print("get link", link)
+        # if the link is not html, write it to resources.txt
+        _, suffix  = os.path.splitext(link)
+        if suffix not in [".html", ".htm"] and suffix != "" :
+            with open(folder_path + "/resources.txt", "a") as f:
+                f.write(link + "\n")
+            continue
+
         # create filename from path
         parsed_uri = urlparse(link)
         path = '{uri.path}'.format(uri=parsed_uri)
         filename = folder_path + "/" + quote(path, safe='') + ".png"
 
         printscreen(link, filename)
+        save_all_images(link, folder_path + "/resources.txt")
